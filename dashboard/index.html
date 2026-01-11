@@ -3,363 +3,211 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>오늘/내일 마감 대시보드</title>
+  <title>업무 대시보드</title>
   <link rel="icon" href="/static/favicon.ico" />
   <link rel="stylesheet" href="/static/style.css" />
 
   <style>
-    /* 기존 톤 유지 + 최소만 추가 */
-    .page-title{
-      font-size:1.75rem;
-      margin:18px 0 8px;
-      text-align:left !important;
+    .topbar{
+      display:flex; gap:8px; flex-wrap:wrap;
+      align-items:center; justify-content:flex-start;
+      margin:10px 0 6px;
     }
-    .subtitle{margin:0 0 12px; color:#444; font-size:0.98rem}
     .pill{
       display:inline-block;
-      padding:4px 10px;
+      padding:6px 10px;
+      border:1px solid #d1d5db;
       border-radius:999px;
-      border:1px solid #222;
-      font-size:.85rem;
-      font-weight:700;
-      background:#fff;
+      background:#f9fafb;
+      font-size:.95rem;
       color:#111;
-      margin-right:6px;
-      margin-bottom:6px;
       white-space:nowrap;
     }
-    .pill.d0{ border-color:#c8352d; color:#c8352d; }
-    .pill.d1{ border-color:#1e5fbf; color:#1e5fbf; }
-    .pill.over{ border-color:#111; background:#111; color:#fff; }
-
     .banner{
       border:1px solid #e5e5e5;
       border-radius:14px;
       padding:14px 16px;
-      background:#fafafa;
-      margin:12px 0 16px;
-    }
-    .banner h3{ margin:0 0 8px; font-size:1.05rem; }
-    .banner .line{ margin:6px 0; }
-    .danger{
-      border-color:#c8352d !important;
-      background:#fff5f5 !important;
-    }
-    .ok{
-      border-color:#16a34a !important;
-      background:#f0fdf4 !important;
-    }
-    .small{ font-size:.95rem; color:#555; }
-
-    .two-col{
-      display:grid;
-      gap:12px;
-      grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));
-    }
-
-    .checklist-item{
-      display:flex;
-      align-items:flex-start;
-      gap:10px;
-      padding:10px 12px;
-      border:1px solid #e5e5e5;
-      border-radius:12px;
+      margin:12px 0;
       background:#fff;
-      margin:10px 0;
     }
-    .checklist-item input[type="checkbox"]{
-      margin-top:4px;
-      transform:scale(1.1);
+    .banner.warn{
+      border-color:#fca5a5;
+      background:#fff1f2;
     }
-    .checklist-item .meta{
-      display:flex;
-      flex-wrap:wrap;
-      gap:6px;
-      margin-top:4px;
-    }
-    .checklist-item .title{
+    .banner-title{
       font-weight:800;
       color:#111;
-      line-height:1.35;
+      margin:0 0 8px;
+      font-size:1.05rem;
     }
-    .checklist-item.done{
-      opacity:.55;
+    .kpi{
+      display:flex; gap:10px; flex-wrap:wrap;
+      margin:8px 0 0;
     }
-    .checklist-item.done .title{
-      text-decoration:line-through;
+    .kpi .pill{ background:#fff; }
+    .list{
+      margin:0;
+      padding-left:18px;
     }
-
-    .field-row{
-      display:grid;
-      gap:8px;
-      grid-template-columns: 1fr 160px 160px;
-      align-items:end;
-    }
-    @media (max-width: 720px){
-      .field-row{ grid-template-columns: 1fr; }
-    }
-
-    .table-mini{
-      width:100%;
-      border-collapse:collapse;
-      font-size:1rem;
-      background:#fff;
-    }
-    .table-mini th, .table-mini td{
-      border:1px solid #e5e7eb;
-      padding:8px 10px;
-      text-align:left;
-    }
-    .table-mini th{
-      background:#f9fafb;
-      font-weight:700;
-    }
+    .list li{ margin:6px 0; }
     .tag{
       display:inline-block;
       padding:2px 8px;
       border-radius:999px;
-      border:1px solid #d1d5db;
+      border:1px solid #e5e7eb;
+      background:#fafafa;
       font-size:.85rem;
-      background:#f9fafb;
-      color:#111;
+      margin-right:6px;
+      color:#333;
     }
-    .tag.red{ border-color:#fecaca; background:#fff5f5; color:#991b1b; }
-    .tag.green{ border-color:#bbf7d0; background:#f0fdf4; color:#166534; }
-
-    .top-actions{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      margin:10px 0 0;
-    }
+    .tag.risk{ border-color:#fca5a5; background:#fff1f2; }
+    .tag.approver{ border-color:#c7d2fe; background:#eef2ff; }
+    .tag.channel{ border-color:#d1fae5; background:#ecfdf5; }
+    .tag.absent{ border-color:#fb7185; background:#ffe4e6; }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace; }
+    .small{ font-size:.95rem; color:#555; }
   </style>
 </head>
 
 <body>
-  <main class="container" style="max-width:880px; margin:0 auto; padding:24px 16px;">
+<main class="container" style="max-width:880px; margin:0 auto; padding:24px 16px;">
 
-    <h1 class="page-title">오늘/내일 마감 대시보드</h1>
-    <p class="subtitle">·정적 페이지 + localStorage 기반 (본인만 사용)</p>
+  <h1>업무 대시보드</h1>
+  <p class="muted">
+    ·로컬 저장소 미사용(0) · 데이터는 GitHub JSON 관리<br/>
+    ·오늘/내일/7일 요약: Task(분기 파일) + notes(달력 메모) + absence(부재/결재대행)
+  </p>
 
-    <div class="top-actions">
-      <a class="btn" href="/calendar/">학년도별 달력</a>
-      <a class="btn" href="/">메인</a>
-      <a class="btn" id="btnOpenWeekly" href="#">이번주 주간 달력</a>
-      <a class="btn" id="btnOpenMonthly" href="#">이번달 월간 달력</a>
-    </div>
+  <div class="topbar">
+    <a class="btn" href="/">메인</a>
+    <a class="btn" href="/calendar/">학년도 달력</a>
+    <a class="btn" id="goMonthly" href="/calendar/calendar-monthly-academic.html">월간(이번달)</a>
+    <a class="btn" id="goWeekly" href="/calendar/calendar-weekly-academic.html">주간(이번주)</a>
+  </div>
 
-    <hr/>
+  <div class="section">
+    <h2 class="local-h2" style="margin:0 0 10px;">상태 요약</h2>
+    <div class="kpi" id="kpi"></div>
+    <div class="small" id="kpiHint"></div>
+  </div>
 
-    <!-- 1) D-0/D-1 배너 -->
-    <section class="section">
-      <h2 style="font-size:1.2rem; margin:0 0 10px">D-0/D-1 배너</h2>
-      <p class="muted">·달력 notes(공식 일정 메모) + 대시보드 개인 업무(체크리스트/마감) 합쳐서 표시</p>
+  <!-- 결재 지연 위험 배너 -->
+  <div class="banner warn" id="approvalRiskBox" style="display:none;">
+    <div class="banner-title">결재 지연 위험(오늘·내일)</div>
+    <ul class="list" id="approvalRiskList"></ul>
+    <div class="small" id="approvalRiskHint" style="margin-top:8px;"></div>
+  </div>
 
-      <div id="banner" class="banner">
-        로딩 중…
-      </div>
+  <div class="banner" id="todayBox">
+    <div class="banner-title" id="todayTitle">오늘</div>
+    <ul class="list" id="todayList"></ul>
+  </div>
 
-      <div class="two-col">
-        <div class="card">
-          <h3 class="local-h3" style="margin:0 0 8px">달력 notes — 오늘</h3>
-          <div id="notesToday" class="small">-</div>
-        </div>
-        <div class="card">
-          <h3 class="local-h3" style="margin:0 0 8px">달력 notes — 내일</h3>
-          <div id="notesTomorrow" class="small">-</div>
-        </div>
-      </div>
-    </section>
+  <div class="banner" id="tomorrowBox">
+    <div class="banner-title" id="tomorrowTitle">내일</div>
+    <ul class="list" id="tomorrowList"></ul>
+  </div>
 
-    <!-- 2) 오늘/내일 체크리스트 -->
-    <section class="section">
-      <h2 style="font-size:1.2rem; margin:0 0 10px">오늘/내일 체크리스트</h2>
-      <p class="muted">·업무를 “마감일” 기준으로 등록 → 오늘/내일/지연 자동 분류 · 완료 체크는 로컬 저장</p>
+  <div class="section">
+    <h2 class="local-h2" style="margin:0 0 10px;">향후 7일</h2>
+    <div id="weekRoot"></div>
 
-      <div class="card">
-        <h3 class="local-h3" style="margin:0 0 10px">업무 추가</h3>
+    <p class="muted" style="margin-top:10px;">
+      ·표시 우선순위: Task(마감/리스크) → notes(달력 메모) → 부재 참고<br/>
+      ·notes: <span class="mono">/calendar/notes/notes-*.json</span><br/>
+      ·tasks: <span class="mono">/data/tasks/tasks-YYYY-MM-MM.json</span><br/>
+      ·absence: <span class="mono">/data/absence/absence-YYYY-MM-MM.json</span>
+    </p>
+  </div>
 
-        <div class="field-row">
-          <div class="field">
-            <label class="muted">업무명</label><br/>
-            <input id="newTitle" type="text" placeholder="예: 12월 원천세 신고/납부, 지출결의 상신…" />
-          </div>
+  <footer class="site-footer" style="text-align:center;">
+    제작·운영: 씩씩하고 귀여운 고주무관 · 개인 전용
+  </footer>
 
-          <div class="field">
-            <label class="muted">마감일</label><br/>
-            <input id="newDue" type="date" />
-          </div>
-
-          <div class="field">
-            <button class="btn primary" id="btnAddTask" type="button">추가</button>
-          </div>
-        </div>
-
-        <div class="field-row" style="margin-top:8px;">
-          <div class="field">
-            <label class="muted">업무 분류(선택)</label><br/>
-            <input id="newCategory" type="text" placeholder="예: 급여/계약/세무/사회보험/수납/기타" />
-          </div>
-
-          <div class="field">
-            <label class="muted">결재권자(선택)</label><br/>
-            <input id="newApprover" type="text" placeholder="예: 실장님" />
-          </div>
-
-          <div class="field">
-            <label class="muted">메모(선택)</label><br/>
-            <input id="newMemo" type="text" placeholder="예: 에듀파인 원인행위 먼저 / 은행 방문 필요" />
-          </div>
-        </div>
-
-        <div style="margin-top:10px" class="muted">
-          ·팁: “결재권자” 입력해두면, 아래 ‘부재 현황’과 연동해서 **오늘 결재 불가 경고**가 뜸
-        </div>
-      </div>
-
-      <div class="two-col">
-        <div class="card">
-          <h3 class="local-h3" style="margin:0 0 8px"><span class="pill d0">D-0</span> 오늘</h3>
-          <div id="listToday"></div>
-        </div>
-
-        <div class="card">
-          <h3 class="local-h3" style="margin:0 0 8px"><span class="pill d1">D-1</span> 내일</h3>
-          <div id="listTomorrow"></div>
-        </div>
-
-        <div class="card">
-          <h3 class="local-h3" style="margin:0 0 8px"><span class="pill over">지연</span> 마감 경과</h3>
-          <div id="listOverdue"></div>
-        </div>
-
-        <div class="card">
-          <h3 class="local-h3" style="margin:0 0 8px">전체(참고)</h3>
-          <div id="listAll"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 3) 결재권자/행정실 복무(부재) 현황 -->
-    <section class="section">
-      <h2 style="font-size:1.2rem; margin:0 0 10px">결재권자/행정실 복무(부재) 현황</h2>
-      <p class="muted">·정적 페이지라서 “나 혼자 쓰는 부재/대행 메모장” 방식 · 오늘 날짜 기준으로 결재 지연 리스크 경고</p>
-
-      <div class="card">
-        <h3 class="local-h3" style="margin:0 0 10px">부재 등록</h3>
-
-        <div class="field-row">
-          <div class="field">
-            <label class="muted">대상</label><br/>
-            <input id="absName" type="text" placeholder="예: 실장님 / 차석님 / 행정사 / 나" />
-          </div>
-
-          <div class="field">
-            <label class="muted">시작일</label><br/>
-            <input id="absFrom" type="date" />
-          </div>
-
-          <div class="field">
-            <label class="muted">종료일</label><br/>
-            <input id="absTo" type="date" />
-          </div>
-        </div>
-
-        <div class="field-row" style="margin-top:8px;">
-          <div class="field">
-            <label class="muted">사유/비고</label><br/>
-            <input id="absMemo" type="text" placeholder="예: 연가 / 출장 / 병가 / 대행: ○○" />
-          </div>
-
-          <div class="field">
-            <button class="btn primary" id="btnAddAbs" type="button">등록</button>
-            <button class="btn" id="btnClearAbs" type="button">전체 삭제</button>
-          </div>
-
-          <div class="field">
-            <span class="muted">·저장 위치: localStorage</span>
-          </div>
-        </div>
-      </div>
-
-      <div id="absStatus" class="banner">-</div>
-
-      <div class="card">
-        <h3 class="local-h3" style="margin:0 0 10px">등록된 부재 목록</h3>
-        <div class="table-wrap">
-          <table class="table-mini">
-            <thead>
-              <tr>
-                <th>대상</th>
-                <th>기간</th>
-                <th>사유/비고</th>
-                <th style="width:90px">삭제</th>
-              </tr>
-            </thead>
-            <tbody id="absTableBody">
-              <tr><td colspan="4" class="muted">-</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <footer class="muted" style="text-align:center; margin-top:16px;">
-      제작자: 씩씩하고 귀여운 고주무관 · 개인용 대시보드
-    </footer>
-  </main>
-
-  <script src="/static/disable-copy.js"></script>
-  <script src="/static/global-loader.js?v=1"></script>
+</main>
 
 <script>
 /* =========================
-   공통 유틸
+   유틸
 ========================= */
-const pad = n => (n<10 ? "0"+n : ""+n);
-const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-const parseYmd = s => { const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); };
-const addDays = (d,n) => { const x=new Date(d); x.setDate(x.getDate()+n); return x; };
+const pad = n => (n < 10 ? "0" : "") + n;
 
-function escapeHtml(str){
-  return (str||"")
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+
+const parseYmd = s => {
+  const [y,m,d] = s.split("-").map(Number);
+  return new Date(y, m-1, d);
+};
+
+const addDays = (d, n) => {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+};
+
+const fmtK = d => {
+  const wd = ["일","월","화","수","목","금","토"][d.getDay()];
+  return `${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()}(${wd})`;
+};
+
+function escapeHtml(s){
+  return String(s)
     .replaceAll("&","&amp;")
     .replaceAll("<","&lt;")
     .replaceAll(">","&gt;")
     .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
+    .replaceAll("'","&#39;");
 }
 
 /* =========================
-   달력 링크(이번주/이번달)
+   결재/처리 기본 시간대
+   - Task.needBy가 없을 때 판정 기준
 ========================= */
-(function initCalendarLinks(){
-  const t = new Date();
-  const monthStart = `${t.getFullYear()}-${pad(t.getMonth()+1)}`;
-  const weekStart = new Date(t.getFullYear(), t.getMonth(), t.getDate());
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // 일요일 시작
+const DEFAULT_WORK_START = "08:40";
+const DEFAULT_WORK_END   = "16:40";
 
-  document.getElementById("btnOpenMonthly").href =
-    `/calendar/calendar-monthly-academic.html?start=${monthStart}&months=1`;
-
-  document.getElementById("btnOpenWeekly").href =
-    `/calendar/calendar-weekly-academic.html?start=${ymd(weekStart)}&weeks=1`;
-})();
-
-/* =========================
-   notes 로딩 (현재 반기 파일만)
-   - 기존 halfKey 로직 그대로 가져옴
-========================= */
-function halfKey(d){
-  const y=d.getFullYear(), m=d.getMonth()+1;
-  if(m>=3 && m<=8) return `${y}-03-08`;
-  return `${m>=9 ? y : y-1}-09-02`;
+function toMin(hm){
+  if(!hm) return null;
+  const [h,m] = String(hm).split(":").map(Number);
+  if(Number.isNaN(h) || Number.isNaN(m)) return null;
+  return h*60 + m;
 }
 
-async function loadNotesForDates(dateList){
-  const keys = [...new Set(dateList.map(d => halfKey(d)))];
-  let NOTES = {};
-  await Promise.all(keys.map(async k=>{
+function overlap(a1, a2, b1, b2){
+  // [a1,a2] 와 [b1,b2] 겹치면 true
+  return Math.max(a1,b1) <= Math.min(a2,b2);
+}
+
+/* =========================
+   달력 단축 링크
+========================= */
+function setCalendarShortcuts(today){
+  const ym = `${today.getFullYear()}-${pad(today.getMonth()+1)}`;
+  document.getElementById("goMonthly").href =
+    `/calendar/calendar-monthly-academic.html?start=${ym}&months=1`;
+
+  const s = new Date(today);
+  s.setDate(s.getDate() - s.getDay());
+  document.getElementById("goWeekly").href =
+    `/calendar/calendar-weekly-academic.html?start=${ymd(s)}&weeks=1`;
+}
+
+/* =========================
+   notes 로딩(기존 규칙 유지)
+========================= */
+function halfKeyByDate(dt){
+  const y = dt.getFullYear(), m = dt.getMonth()+1;
+  if(m >= 3 && m <= 8) return `${y}-03-08`;
+  return `${(m >= 9 ? y : y-1)}-09-02`;
+}
+
+async function loadNotesForRange(startDate, days){
+  const keys = new Set();
+  for(let i=0;i<days;i++){
+    keys.add(halfKeyByDate(addDays(startDate, i)));
+  }
+  const NOTES = {};
+  await Promise.all([...keys].map(async k => {
     try{
       const r = await fetch(`/calendar/notes/notes-${k}.json`);
       if(!r.ok) return;
@@ -370,444 +218,318 @@ async function loadNotesForDates(dateList){
 }
 
 /* =========================
-   localStorage 스키마
-   - tasks: {id,title,due,category,approver,memo,doneAt}
-   - absences: {id,name,from,to,memo}
+   분기(3개월) 키: tasks/absence 공통
+   - YYYY-01-03 / YYYY-04-06 / YYYY-07-09 / YYYY-10-12
 ========================= */
-const LS_TASKS = "g0.dashboard.tasks.v1";
-const LS_ABS   = "g0.dashboard.absences.v1";
+function quarterRangeKey(dt){
+  const y = dt.getFullYear();
+  const m = dt.getMonth() + 1;
 
-function loadJson(key, fallback){
-  try{
-    const raw = localStorage.getItem(key);
-    if(!raw) return fallback;
-    return JSON.parse(raw);
-  }catch(e){
-    return fallback;
-  }
-}
-function saveJson(key, value){
-  localStorage.setItem(key, JSON.stringify(value));
-}
-function uid(){
-  return Math.random().toString(16).slice(2) + "-" + Date.now().toString(16);
+  let start, end;
+  if(m <= 3){ start = 1; end = 3; }
+  else if(m <= 6){ start = 4; end = 6; }
+  else if(m <= 9){ start = 7; end = 9; }
+  else { start = 10; end = 12; }
+
+  return `${y}-${pad(start)}-${pad(end)}`;
 }
 
 /* =========================
-   업무(체크리스트) 렌더
+   tasks 로딩
 ========================= */
-function normalizeDateStr(s){
-  // input[type=date]는 보통 YYYY-MM-DD로 나오지만, 혹시 공백/누락 방어
-  if(!s) return "";
-  return s.slice(0,10);
-}
-
-function splitTasksByDue(tasks, todayStr, tomorrowStr){
-  const today = parseYmd(todayStr);
-  const tomorrow = parseYmd(tomorrowStr);
-
-  const todayList = [];
-  const tomorrowList = [];
-  const overdueList = [];
-  const allList = [];
-
-  for(const t of tasks){
-    const due = parseYmd(t.due);
-    allList.push(t);
-
-    if(t.due === todayStr) todayList.push(t);
-    else if(t.due === tomorrowStr) tomorrowList.push(t);
-    else if(due < today) overdueList.push(t);
+async function loadTasksForRange(startDate, days){
+  const keys = new Set();
+  for(let i=0;i<days;i++){
+    keys.add(quarterRangeKey(addDays(startDate, i)));
   }
 
-  const sortFn = (a,b) => {
-    if(a.doneAt && !b.doneAt) return 1;
-    if(!a.doneAt && b.doneAt) return -1;
-    if(a.due !== b.due) return a.due.localeCompare(b.due);
-    return (a.title||"").localeCompare(b.title||"");
-  };
+  let all = [];
+  await Promise.all([...keys].map(async k => {
+    try{
+      const r = await fetch(`/data/tasks/tasks-${k}.json`);
+      if(!r.ok) return;
+      const data = await r.json();
+      const arr = Array.isArray(data) ? data : (data.tasks || []);
+      all = all.concat(arr);
+    }catch(e){}
+  }));
 
-  todayList.sort(sortFn);
-  tomorrowList.sort(sortFn);
-  overdueList.sort(sortFn);
-  allList.sort(sortFn);
-
-  return { todayList, tomorrowList, overdueList, allList };
+  return all
+    .filter(t => t && typeof t.due === "string" && t.due.length >= 10)
+    .sort((a,b) => (a.due < b.due ? -1 : a.due > b.due ? 1 : 0));
 }
 
-function taskPills(t){
-  const pills = [];
-  if(t.category) pills.push(`<span class="tag">${escapeHtml(t.category)}</span>`);
-  if(t.approver) pills.push(`<span class="tag">${escapeHtml(t.approver)}</span>`);
-  return pills.join(" ");
+/* =========================
+   absence 로딩
+========================= */
+async function loadAbsenceForRange(startDate, days){
+  const keys = new Set();
+  for(let i=0;i<days;i++){
+    keys.add(quarterRangeKey(addDays(startDate, i)));
+  }
+
+  let all = [];
+  await Promise.all([...keys].map(async k => {
+    try{
+      const r = await fetch(`/data/absence/absence-${k}.json`);
+      if(!r.ok) return;
+      const data = await r.json();
+      const arr = Array.isArray(data) ? data : (data.absence || []);
+      all = all.concat(arr);
+    }catch(e){}
+  }));
+
+  all = all.filter(x => x && x.name && x.from && x.to);
+  return all;
 }
 
-function renderTaskItem(t, {warningText=""} = {}){
-  const done = !!t.doneAt;
-  const memo = t.memo ? `<div class="small">· ${escapeHtml(t.memo)}</div>` : "";
-  const warn = warningText ? `<div class="small"><span class="tag red">주의</span> ${escapeHtml(warningText)}</div>` : "";
+/* =========================
+   absence 판정
+   - 날짜 범위(from~to) 먼저 체크
+   - 시간이 있으면(부분부재) task 기준 시간대와 겹칠 때만 "부재"로 판정
+   - 시간이 없으면(종일부재) 무조건 "부재"로 판정
+========================= */
+function findAbsenceForTask(name, dateStr, absenceList, task){
+  if(!name) return null;
+  const n = String(name).trim();
+  if(!n) return null;
 
-  return `
-    <div class="checklist-item ${done ? "done":""}" data-id="${t.id}">
-      <input type="checkbox" ${done ? "checked":""} class="task-toggle"/>
-      <div style="flex:1; min-width:0;">
-        <div class="title">${escapeHtml(t.title)}</div>
-        <div class="meta">
-          <span class="tag">마감 ${escapeHtml(t.due)}</span>
-          ${taskPills(t)}
-        </div>
-        ${memo}
-        ${warn}
-        <div style="margin-top:6px;">
-          <button type="button" class="btn btn-lightgrey task-edit" style="margin-right:6px;">수정</button>
-          <button type="button" class="btn btn-lightgrey task-del">삭제</button>
-        </div>
-      </div>
-    </div>
-  `;
+  // task 시간(선택)
+  const needBy = task && task.needBy ? String(task.needBy).trim() : "";
+  const taskEndMin = needBy ? toMin(needBy) : null;
+
+  const wStart = toMin(DEFAULT_WORK_START);
+  const wEnd   = toMin(DEFAULT_WORK_END);
+
+  const checkStart = wStart;
+  const checkEndRaw = (taskEndMin !== null ? taskEndMin : wEnd);
+
+  // 안전장치: 끝이 시작보다 이르면 시작으로 보정
+  const checkEnd = Math.max(checkStart, checkEndRaw);
+
+  for(const a of absenceList){
+    if(String(a.name).trim() !== n) continue;
+    if(!(a.from <= dateStr && dateStr <= a.to)) continue;
+
+    // absence 시간이 없으면 종일 부재로 간주
+    const aStartMin = toMin(a.startTime);
+    const aEndMin   = toMin(a.endTime);
+    if(aStartMin === null || aEndMin === null){
+      return a;
+    }
+
+    // 부분 부재면 시간 겹침 검사
+    if(overlap(checkStart, checkEnd, aStartMin, aEndMin)){
+      return a;
+    }
+  }
+
+  return null;
 }
 
-function renderTaskList(container, tasks, warningMap){
-  const el = document.getElementById(container);
-  if(!tasks.length){
-    el.innerHTML = `<div class="muted">-</div>`;
+/* =========================
+   렌더 helpers
+========================= */
+function makeTaskLine(t){
+  const tags = [];
+  if(t.risk) tags.push(`<span class="tag risk">리스크:${escapeHtml(t.risk)}</span>`);
+  if(t.approver) tags.push(`<span class="tag approver">결재:${escapeHtml(t.approver)}</span>`);
+  if(t.channel) tags.push(`<span class="tag channel">${escapeHtml(t.channel)}</span>`);
+
+  const title = escapeHtml(t.title || "(제목없음)");
+  const memo = t.memo ? ` <span class="small">— ${escapeHtml(t.memo)}</span>` : "";
+  const needBy = t.needBy ? ` <span class="small">·기한 ${escapeHtml(t.needBy)}</span>` : "";
+  return `${tags.join("")}${title}${needBy}${memo}`;
+}
+
+function fillUl(ul, items){
+  ul.innerHTML = "";
+  if(!items.length){
+    ul.innerHTML = `<li class="muted">표시할 항목 없음</li>`;
     return;
   }
-  el.innerHTML = tasks.map(t => renderTaskItem(t, { warningText: warningMap[t.id] || "" })).join("");
+  ul.innerHTML = items.map(x => `<li>${x}</li>`).join("");
 }
 
 /* =========================
-   부재(복무) 로직
+   실행
 ========================= */
-function isDateInRange(dateStr, fromStr, toStr){
-  const d = parseYmd(dateStr);
-  const from = parseYmd(fromStr);
-  const to = parseYmd(toStr);
-  // inclusive
-  return d >= from && d <= to;
-}
+(async function(){
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  setCalendarShortcuts(today);
 
-function computeAbsenceStatus(absList, todayStr){
-  const todayAbs = absList.filter(a => isDateInRange(todayStr, a.from, a.to));
-  return todayAbs;
-}
+  const DAYS = 8; // 오늘~7일
+  const NOTES = await loadNotesForRange(today, DAYS);
+  const TASKS = await loadTasksForRange(today, DAYS);
+  const ABSENCE = await loadAbsenceForRange(today, DAYS);
 
-function renderAbsTable(absList){
-  const body = document.getElementById("absTableBody");
-  if(!absList.length){
-    body.innerHTML = `<tr><td colspan="4" class="muted">-</td></tr>`;
-    return;
-  }
-  body.innerHTML = absList.map(a => `
-    <tr data-id="${a.id}">
-      <td>${escapeHtml(a.name)}</td>
-      <td>${escapeHtml(a.from)} ~ ${escapeHtml(a.to)}</td>
-      <td>${escapeHtml(a.memo || "")}</td>
-      <td><button type="button" class="btn btn-lightgrey abs-del">삭제</button></td>
-    </tr>
-  `).join("");
-}
-
-function renderAbsStatus(todayAbs){
-  const box = document.getElementById("absStatus");
-  if(!todayAbs.length){
-    box.className = "banner ok";
-    box.innerHTML = `<h3 style="margin:0 0 6px;">오늘 부재 등록 없음</h3><div class="small">·결재/협의 지연 리스크 낮음(등록 기준)</div>`;
-    return;
-  }
-  box.className = "banner danger";
-  box.innerHTML = `
-    <h3 style="margin:0 0 6px;">오늘 부재자 있음</h3>
-    ${todayAbs.map(a => `
-      <div class="line">
-        <span class="tag red">${escapeHtml(a.name)}</span>
-        <span class="small">${escapeHtml(a.memo || "")}</span>
-      </div>
-    `).join("")}
-    <div class="small" style="margin-top:8px;">·결재 필요 업무는 대행/대체 결재 루트 확인 권장</div>
-  `;
-}
-
-/* =========================
-   배너(D-0/D-1) 생성
-   - notes + tasks 결합 요약
-========================= */
-function buildBannerHtml({notesToday, notesTomorrow, todayTasks, tomorrowTasks, overdueTasks, todayAbs}){
-  const chunks = [];
-
-  // 요약 숫자
-  chunks.push(`
-    <div style="margin-bottom:8px;">
-      <span class="pill d0">오늘 ${todayTasks.filter(t=>!t.doneAt).length}건</span>
-      <span class="pill d1">내일 ${tomorrowTasks.filter(t=>!t.doneAt).length}건</span>
-      <span class="pill over">지연 ${overdueTasks.filter(t=>!t.doneAt).length}건</span>
-    </div>
-  `);
-
-  // 결재 리스크
-  if(todayAbs.length){
-    const names = todayAbs.map(a=>a.name).join(", ");
-    chunks.push(`<div class="line"><span class="tag red">결재/협의 리스크</span> 오늘 부재: ${escapeHtml(names)}</div>`);
-  }else{
-    chunks.push(`<div class="line"><span class="tag green">결재/협의</span> 오늘 부재 등록 없음</div>`);
+  // 날짜별 task
+  const byDateTasks = new Map();
+  for(const t of TASKS){
+    if(!byDateTasks.has(t.due)) byDateTasks.set(t.due, []);
+    byDateTasks.get(t.due).push(t);
   }
 
-  // notes 요약(존재할 때만)
-  const nt = (notesToday||"").trim();
-  const nm = (notesTomorrow||"").trim();
+  // KPI
+  let due0=0, due1=0, due7=0;
+  let approvalRiskCount=0;
 
-  if(nt){
-    chunks.push(`<div class="line"><span class="tag">notes(오늘)</span> <span class="small">${nt}</span></div>`);
-  }
-  if(nm){
-    chunks.push(`<div class="line"><span class="tag">notes(내일)</span> <span class="small">${nm}</span></div>`);
-  }
+  const todayKey = ymd(today);
+  const tomorrowKey = ymd(addDays(today,1));
 
-  // 지연 업무가 있으면 추가 경고
-  const overdueOpen = overdueTasks.filter(t=>!t.doneAt);
-  if(overdueOpen.length){
-    chunks.push(`<div class="line"><span class="tag red">지연</span> 미처리 ${overdueOpen.length}건 (감사/마감 리스크)</div>`);
-  }
+  for(let i=0;i<DAYS;i++){
+    const key = ymd(addDays(today, i));
+    const arr = (byDateTasks.get(key) || []);
+    const n = arr.length;
 
-  return chunks.join("");
-}
+    if(i===0) due0 += n;
+    if(i===1) due1 += n;
+    if(i>=0 && i<=7) due7 += n;
 
-/* =========================
-   이벤트 바인딩
-========================= */
-function bindTaskEvents(){
-  // 체크 토글 / 삭제 / 수정 (이벤트 위임)
-  document.addEventListener("click", (e) => {
-    const box = e.target.closest(".checklist-item");
-    if(!box) return;
-    const id = box.getAttribute("data-id");
-    if(!id) return;
-
-    // 삭제
-    if(e.target.classList.contains("task-del")){
-      const tasks = loadJson(LS_TASKS, []);
-      saveJson(LS_TASKS, tasks.filter(t => t.id !== id));
-      renderAll();
-      return;
-    }
-
-    // 수정
-    if(e.target.classList.contains("task-edit")){
-      const tasks = loadJson(LS_TASKS, []);
-      const t = tasks.find(x => x.id === id);
-      if(!t) return;
-
-      const title = prompt("업무명", t.title || "");
-      if(title === null) return;
-
-      const due = prompt("마감일(YYYY-MM-DD)", t.due || "");
-      if(due === null) return;
-
-      const category = prompt("업무 분류(선택)", t.category || "");
-      if(category === null) return;
-
-      const approver = prompt("결재권자(선택)", t.approver || "");
-      if(approver === null) return;
-
-      const memo = prompt("메모(선택)", t.memo || "");
-      if(memo === null) return;
-
-      t.title = (title || "").trim();
-      t.due = normalizeDateStr((due || "").trim());
-      t.category = (category || "").trim();
-      t.approver = (approver || "").trim();
-      t.memo = (memo || "").trim();
-
-      saveJson(LS_TASKS, tasks);
-      renderAll();
-      return;
-    }
-  });
-
-  document.addEventListener("change", (e) => {
-    const cb = e.target;
-    if(!cb.classList.contains("task-toggle")) return;
-
-    const box = cb.closest(".checklist-item");
-    if(!box) return;
-    const id = box.getAttribute("data-id");
-    if(!id) return;
-
-    const tasks = loadJson(LS_TASKS, []);
-    const t = tasks.find(x => x.id === id);
-    if(!t) return;
-
-    if(cb.checked) t.doneAt = Date.now();
-    else t.doneAt = null;
-
-    saveJson(LS_TASKS, tasks);
-    renderAll();
-  });
-
-  // 업무 추가 버튼
-  document.getElementById("btnAddTask").addEventListener("click", () => {
-    const title = (document.getElementById("newTitle").value || "").trim();
-    const due = normalizeDateStr(document.getElementById("newDue").value || "");
-    const category = (document.getElementById("newCategory").value || "").trim();
-    const approver = (document.getElementById("newApprover").value || "").trim();
-    const memo = (document.getElementById("newMemo").value || "").trim();
-
-    if(!title){
-      alert("업무명을 입력하세요.");
-      return;
-    }
-    if(!due){
-      alert("마감일을 입력하세요.");
-      return;
-    }
-
-    const tasks = loadJson(LS_TASKS, []);
-    tasks.push({ id: uid(), title, due, category, approver, memo, doneAt: null });
-    saveJson(LS_TASKS, tasks);
-
-    // 입력값 정리
-    document.getElementById("newTitle").value = "";
-    document.getElementById("newMemo").value = "";
-
-    renderAll();
-  });
-}
-
-function bindAbsenceEvents(){
-  document.getElementById("btnAddAbs").addEventListener("click", () => {
-    const name = (document.getElementById("absName").value || "").trim();
-    const from = normalizeDateStr(document.getElementById("absFrom").value || "");
-    const to   = normalizeDateStr(document.getElementById("absTo").value || "");
-    const memo = (document.getElementById("absMemo").value || "").trim();
-
-    if(!name){ alert("대상을 입력하세요."); return; }
-    if(!from || !to){ alert("기간(시작/종료)을 입력하세요."); return; }
-
-    const abs = loadJson(LS_ABS, []);
-    abs.push({ id: uid(), name, from, to, memo });
-    saveJson(LS_ABS, abs);
-
-    document.getElementById("absName").value = "";
-    document.getElementById("absMemo").value = "";
-
-    renderAll();
-  });
-
-  document.getElementById("btnClearAbs").addEventListener("click", () => {
-    const ok = confirm("부재 목록을 전체 삭제할까요? (되돌릴 수 없음)");
-    if(!ok) return;
-    saveJson(LS_ABS, []);
-    renderAll();
-  });
-
-  // 삭제(이벤트 위임)
-  document.addEventListener("click", (e) => {
-    if(!e.target.classList.contains("abs-del")) return;
-    const tr = e.target.closest("tr");
-    if(!tr) return;
-    const id = tr.getAttribute("data-id");
-    if(!id) return;
-
-    const abs = loadJson(LS_ABS, []);
-    saveJson(LS_ABS, abs.filter(a => a.id !== id));
-    renderAll();
-  });
-}
-
-/* =========================
-   결재권자 부재 경고 만들기
-========================= */
-function buildTaskWarnings(tasks, todayAbs, todayStr, tomorrowStr){
-  // 오늘/내일 기준으로 “결재권자”가 부재면 경고 문구 생성
-  const absentNameSet = new Set(todayAbs.map(a => a.name));
-
-  const warningMap = {};
-  for(const t of tasks){
-    if(!t.approver) continue;
-
-    // “오늘/내일/지연”만 의미있게 경고
-    const isCritical = (t.due === todayStr || t.due === tomorrowStr || parseYmd(t.due) < parseYmd(todayStr));
-    if(!isCritical) continue;
-
-    if(absentNameSet.has(t.approver)){
-      warningMap[t.id] = `결재권자(${t.approver}) 오늘 부재 등록됨 → 대행/대체 결재 루트 확인`;
+    // 결재 위험은 오늘/내일만 카운트
+    if(i===0 || i===1){
+      for(const t of arr){
+        const ap = (t.approver || "").trim();
+        if(!ap) continue;
+        const a = findAbsenceForTask(ap, key, ABSENCE, t);
+        if(a) approvalRiskCount++;
+      }
     }
   }
-  return warningMap;
-}
 
-/* =========================
-   메인 렌더
-========================= */
-async function renderAll(){
-  const today = new Date();
-  const tomorrow = addDays(today, 1);
+  const n0 = (NOTES[todayKey] || "").trim() ? 1 : 0;
+  const n1 = (NOTES[tomorrowKey] || "").trim() ? 1 : 0;
 
-  const todayStr = ymd(today);
-  const tomorrowStr = ymd(tomorrow);
+  const kpiHtml = [
+    `<span class="pill">오늘 Task: <b>${due0}</b></span>`,
+    `<span class="pill">내일 Task: <b>${due1}</b></span>`,
+    `<span class="pill">7일 Task: <b>${due7}</b></span>`,
+    `<span class="pill">결재 위험(오늘·내일): <b>${approvalRiskCount}</b></span>`,
+    `<span class="pill">오늘 notes: <b>${n0}</b></span>`,
+    `<span class="pill">내일 notes: <b>${n1}</b></span>`,
+    `<span class="pill">기본 결재 가능시간: <b>${DEFAULT_WORK_START}~${DEFAULT_WORK_END}</b></span>`
+  ];
+  document.getElementById("kpi").innerHTML = kpiHtml.join("");
 
-  // notes
-  const NOTES = await loadNotesForDates([today, tomorrow]);
-  const notesToday = NOTES[todayStr] || "";
-  const notesTomorrow = NOTES[tomorrowStr] || "";
+  // 로딩 분기 힌트
+  const keyTodayQ = quarterRangeKey(today);
+  const keyWeekEndQ = quarterRangeKey(addDays(today,7));
+  const uniqQ = Array.from(new Set([keyTodayQ, keyWeekEndQ]));
+  document.getElementById("kpiHint").innerHTML =
+    `로딩 분기: <span class="mono">${uniqQ.join(", ")}</span>`;
 
-  // notes는 원래 HTML(span 등) 들어가 있으니 innerHTML로 출력
-  document.getElementById("notesToday").innerHTML = notesToday ? notesToday : "<span class='muted'>-</span>";
-  document.getElementById("notesTomorrow").innerHTML = notesTomorrow ? notesTomorrow : "<span class='muted'>-</span>";
+  // 결재 지연 위험 배너(오늘/내일)
+  const riskLines = [];
+  const riskApprovers = new Set();
 
-  // tasks
-  const tasks = loadJson(LS_TASKS, []).filter(t => t && t.id && t.title && t.due);
-  const { todayList, tomorrowList, overdueList, allList } = splitTasksByDue(tasks, todayStr, tomorrowStr);
+  function collectApprovalRisks(dateKey, label){
+    const arr = (byDateTasks.get(dateKey) || []);
+    for(const t of arr){
+      const ap = (t.approver || "").trim();
+      if(!ap) continue;
 
-  // absences
-  const abs = loadJson(LS_ABS, []).filter(a => a && a.id && a.name && a.from && a.to);
-  const todayAbs = computeAbsenceStatus(abs, todayStr);
+      const a = findAbsenceForTask(ap, dateKey, ABSENCE, t);
+      if(!a) continue;
 
-  renderAbsStatus(todayAbs);
-  renderAbsTable(abs);
+      riskApprovers.add(ap);
 
-  // warnings
-  const warningMap = buildTaskWarnings(tasks, todayAbs, todayStr, tomorrowStr);
+      const del = (a.delegate || "").trim();
+      const delTxt = del ? ` / 대행: ${escapeHtml(del)}` : "";
+      const typeTxt = a.type ? `(${escapeHtml(a.type)})` : "";
+      const scopeTxt = a.scope ? ` · ${escapeHtml(a.scope)}` : "";
+      const placeTxt = a.place ? ` · ${escapeHtml(a.place)}` : "";
+      const timeTxt = (a.startTime && a.endTime) ? ` · ${escapeHtml(a.startTime)}~${escapeHtml(a.endTime)}` : " · 종일";
+      const memoTxt = a.memo ? ` <span class="small">— ${escapeHtml(a.memo)}</span>` : "";
 
-  // lists
-  renderTaskList("listToday", todayList, warningMap);
-  renderTaskList("listTomorrow", tomorrowList, warningMap);
-  renderTaskList("listOverdue", overdueList, warningMap);
-  renderTaskList("listAll", allList, warningMap);
+      riskLines.push(
+        `<span class="tag absent">${escapeHtml(label)}</span>` +
+        `<span class="tag approver">결재:${escapeHtml(ap)}</span>` +
+        `${typeTxt}${scopeTxt}${placeTxt}${timeTxt} ` +
+        `${escapeHtml(t.title || "(제목없음)")}` +
+        ` <span class="small">·부재기간 ${escapeHtml(a.from)}~${escapeHtml(a.to)}${delTxt}</span>` +
+        memoTxt
+      );
+    }
+  }
 
-  // banner
-  const banner = document.getElementById("banner");
-  banner.innerHTML = buildBannerHtml({
-    notesToday, notesTomorrow,
-    todayTasks: todayList,
-    tomorrowTasks: tomorrowList,
-    overdueTasks: overdueList,
-    todayAbs
-  });
+  collectApprovalRisks(todayKey, "오늘");
+  collectApprovalRisks(tomorrowKey, "내일");
 
-  // 지연 또는 오늘 부재 있으면 배너 자체도 위험톤
-  const hasOverdueOpen = overdueList.some(t => !t.doneAt);
-  if(todayAbs.length || hasOverdueOpen) banner.classList.add("danger");
-  else banner.classList.add("ok");
-}
+  if(riskLines.length){
+    document.getElementById("approvalRiskBox").style.display = "block";
+    fillUl(document.getElementById("approvalRiskList"), riskLines);
 
-/* =========================
-   초기값 세팅
-========================= */
-(function initDefaults(){
-  // 마감일 기본값: 오늘
-  document.getElementById("newDue").value = ymd(new Date());
+    document.getElementById("approvalRiskHint").innerHTML =
+      `부재 데이터: <span class="mono">/data/absence/absence-${keyTodayQ}.json</span>` +
+      (keyTodayQ !== keyWeekEndQ ? `, <span class="mono">absence-${keyWeekEndQ}.json</span>` : "") +
+      `<br/>매칭된 결재권자: <span class="mono">${Array.from(riskApprovers).join(", ")}</span>`;
+  }
 
-  // 부재 기본값: 오늘~오늘
-  const todayStr = ymd(new Date());
-  document.getElementById("absFrom").value = todayStr;
-  document.getElementById("absTo").value = todayStr;
+  // 오늘/내일 박스
+  document.getElementById("todayTitle").textContent = `오늘 · ${fmtK(today)}`;
+  document.getElementById("tomorrowTitle").textContent = `내일 · ${fmtK(addDays(today,1))}`;
+
+  const todayItems = [];
+  for(const t of (byDateTasks.get(todayKey) || [])){
+    const ap = (t.approver || "").trim();
+    const a = ap ? findAbsenceForTask(ap, todayKey, ABSENCE, t) : null;
+    const extra = a ? ` <span class="tag absent">결재권자 부재</span>` : "";
+    todayItems.push(extra + makeTaskLine(t));
+  }
+  const todayNote = (NOTES[todayKey] || "").trim();
+  if(todayNote) todayItems.push(`<span class="tag">notes</span>${todayNote}`);
+
+  const tomorrowItems = [];
+  for(const t of (byDateTasks.get(tomorrowKey) || [])){
+    const ap = (t.approver || "").trim();
+    const a = ap ? findAbsenceForTask(ap, tomorrowKey, ABSENCE, t) : null;
+    const extra = a ? ` <span class="tag absent">결재권자 부재</span>` : "";
+    tomorrowItems.push(extra + makeTaskLine(t));
+  }
+  const tomorrowNote = (NOTES[tomorrowKey] || "").trim();
+  if(tomorrowNote) tomorrowItems.push(`<span class="tag">notes</span>${tomorrowNote}`);
+
+  fillUl(document.getElementById("todayList"), todayItems);
+  fillUl(document.getElementById("tomorrowList"), tomorrowItems);
+
+  // 향후 7일 카드
+  const weekRoot = document.getElementById("weekRoot");
+  weekRoot.innerHTML = "";
+
+  for(let i=0;i<8;i++){
+    const d = addDays(today, i);
+    const key = ymd(d);
+
+    const lines = [];
+    for(const t of (byDateTasks.get(key) || [])){
+      const ap = (t.approver || "").trim();
+      const a = ap ? findAbsenceForTask(ap, key, ABSENCE, t) : null;
+      const extra = a ? ` <span class="tag absent">결재권자 부재</span>` : "";
+      lines.push(extra + makeTaskLine(t));
+    }
+
+    const note = (NOTES[key] || "").trim();
+    if(note) lines.push(`<span class="tag">notes</span>${note}`);
+
+    if(!lines.length) continue;
+
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div style="font-weight:800; margin-bottom:6px;">${fmtK(d)}</div>
+      <ul class="list">${lines.map(x => `<li>${x}</li>`).join("")}</ul>
+    `;
+    weekRoot.appendChild(card);
+  }
+
+  if(!weekRoot.children.length){
+    weekRoot.innerHTML = `<p class="muted">향후 7일에 표시할 Task/notes가 없습니다.</p>`;
+  }
 })();
-
-bindTaskEvents();
-bindAbsenceEvents();
-renderAll();
 </script>
 
+<script src="/static/disable-copy.js"></script>
+<script src="/static/global-loader.js?v=1"></script>
 </body>
 </html>
