@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>마감기한 임박 업무 대시보드</title>
+  <title>마감 임박 대시보드</title>
 
   <link rel="icon" href="/static/favicon.ico" />
   <link rel="stylesheet" href="/static/style.css" />
@@ -131,7 +131,7 @@
     .chip.due-warn{border-color:rgba(180,83,9,.35); color:var(--warn); font-weight:800;}
     .chip.due-ok{border-color:rgba(15,118,110,.35); color:var(--ok); font-weight:800;}
 
-    /* ✅ 줄바꿈 보존(핵심) */
+    /* 줄바꿈 */
     .white-pre{
       white-space: pre-wrap;
       overflow-wrap:anywhere;
@@ -164,52 +164,48 @@
 
 <body>
   <main class="wrap">
-    <h1>마감기한 임박 업무 대시보드</h1>
-    <p class="subtitle">오늘 · 내일 · 7일 이내 마감만 자동 추출</p>
+    <h1>마감임박 업무 알림</h1>
+    <p class="subtitle">·오늘, 내일, 일주일 뒤 마감 앞둔 업무들</p>
 
     <div class="topbar">
       <div class="left">
-        <span class="pill">기준일: <b id="baseLabel">-</b></span>
+        <span class="pill">오늘 날짜: <b id="baseLabel">-</b></span>
         <span class="pill">불러온 파일: <b id="filesLabel">-</b></span>
       </div>
       <div>
-        <a class="btn" href="/">메인으로</a>
-        <a class="btn" href="/calendar/">달력</a>
+        <a class="btn" href="/">메인으로 돌아가기</a>
+        <a class="btn" href="/calendar/">달력 보기</a>
       </div>
     </div>
 
     <div class="section">
-      <div class="muted">
-        · 데이터는 GitHub에 올린 JSON에서만 불러옵니다(로컬 저장 0).<br/>
-        · 파일 규칙: <b>/dashboard/tasks/tasks-YYYY-MM-03.json</b> (3개월 단위)
-      </div>
 
       <div class="controls">
-        <label class="muted">기준일:
+        <label class="muted">기준 일자:
           <input type="date" id="baseDateInput" />
         </label>
 
-        <label class="muted">범위:
+        <label class="muted">조회 범위:
           <select id="rangeSel">
-            <option value="0">오늘만</option>
-            <option value="1">오늘~내일</option>
-            <option value="7" selected>오늘~7일</option>
-            <option value="14">오늘~14일</option>
+            <option value="0">당일</option>
+            <option value="1">내일까지</option>
+            <option value="7" selected>일주일까지</option>
+            <option value="14">2주까지</option>
           </select>
         </label>
 
-        <button class="btn primary" id="reloadBtn" type="button">다시 불러오기</button>
+        <button class="btn primary" id="reloadBtn" type="button">조회하기</button>
       </div>
     </div>
 
     <section class="section">
-      <h2 style="font-size:1.2rem; margin:0 0 12px">임박 업무</h2>
+      <h2 style="font-size:1.2rem; margin:0 0 12px">마감 임박 업무 목록</h2>
       <hr />
       <div id="root" class="grid"></div>
     </section>
 
     <footer>
-      제작·운영: 씩씩하고 귀여운 고주무관 · 개인 전용
+      제작·운영: 씩씩하고 귀여운 고주무관 · 질병코드 G47.4 기면병 및 탈력발작
     </footer>
   </main>
 
@@ -221,7 +217,7 @@
     //  설정
     // =========================
     const TASKS_DIR = "/dashboard/tasks/";
-    const FILE_DAY = 3; // ✅ 네 규칙: tasks-YYYY-MM-03.json
+    const FILE_DAY = 3; // 파일명: tasks-YYYY-MM-03.json
     const MAX_LOAD_MONTHS_AHEAD = 6; // 안전빵: 현재~다음 6개월 범위의 파일까지
 
     // =========================
@@ -337,7 +333,7 @@
         .sort((a,b)=> startOfDay(a._due) - startOfDay(b._due));
 
       if(filtered.length === 0){
-        root.innerHTML = `<div class="empty">해당 범위에 임박 업무가 없습니다.</div>`;
+        root.innerHTML = `<div class="empty">없음. 자유를 누려라.</div>`;
         return;
       }
 
