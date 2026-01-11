@@ -11,12 +11,12 @@
   <style>
     :root{
       --line:#e5e5e5;
-      --black:#111;
       --muted:#666;
       --chip:#f3f4f6;
       --danger:#c8352d;
       --warn:#b45309;
       --ok:#0f766e;
+      --late:#7c3aed;
     }
 
     .wrap{max-width:880px; margin:0 auto; padding:24px 16px;}
@@ -130,8 +130,9 @@
     .chip.due-danger{border-color:rgba(200,53,45,.35); color:var(--danger); font-weight:800;}
     .chip.due-warn{border-color:rgba(180,83,9,.35); color:var(--warn); font-weight:800;}
     .chip.due-ok{border-color:rgba(15,118,110,.35); color:var(--ok); font-weight:800;}
+    .chip.due-late{border-color:rgba(124,58,237,.35); color:var(--late); font-weight:800;}
 
-    /* 줄바꿈 */
+    /* 줄바꿈 유지 */
     .white-pre{
       white-space: pre-wrap;
       overflow-wrap:anywhere;
@@ -165,12 +166,12 @@
 <body>
   <main class="wrap">
     <h1>마감임박 업무 알림</h1>
-    <p class="subtitle">·오늘, 내일, 일주일 뒤 마감 앞둔 업무들</p>
+    <p class="subtitle">·마감 넘긴 것도 같이 조회</p>
 
     <div class="topbar">
       <div class="left">
-        <span class="pill">오늘 날짜: <b id="baseLabel">-</b></span>
-        <span class="pill">불러온 파일: <b id="filesLabel">-</b></span>
+        <span class="pill">기준 일자: <b id="baseLabel">-</b></span>
+        <span class="pill">파일 로딩: <b id="filesLabel">-</b></span>
       </div>
       <div>
         <a class="btn" href="/">메인으로 돌아가기</a>
@@ -179,7 +180,6 @@
     </div>
 
     <div class="section">
-
       <div class="controls">
         <label class="muted">기준 일자:
           <input type="date" id="baseDateInput" />
@@ -188,14 +188,17 @@
         <label class="muted">조회 범위:
           <select id="rangeSel">
             <option value="0">당일</option>
-            <option value="1">내일까지</option>
-            <option value="7" selected>일주일까지</option>
-            <option value="14">2주까지</option>
+            <option value="1">1일</option>
+            <option value="7" selected>7일</option>
+            <option value="14">14일</option>
           </select>
         </label>
 
         <button class="btn primary" id="reloadBtn" type="button">조회하기</button>
       </div>
+      <p class="muted" style="margin:10px 0 0;">
+        기준일자 전후로 보여줌
+      </p>
     </div>
 
     <section class="section">
@@ -205,7 +208,7 @@
     </section>
 
     <footer>
-      제작·운영: 씩씩하고 귀여운 고주무관 · 질병코드 G47.4 기면병 및 탈력발작
+      제작·운영: 씩씩하고 귀여운 고주무관 · 질병코드 G47.4 기면병 및 탈력발작 · 너넨 기면증 없지? 메롱메롱
     </footer>
   </main>
 
@@ -216,9 +219,9 @@
     // =========================
     //  설정
     // =========================
-    const TASKS_DIR = "/dashboard/tasks/";
-    const FILE_DAY = 3; // 파일명: tasks-YYYY-MM-03.json
-    const MAX_LOAD_MONTHS_AHEAD = 6; // 안전빵: 현재~다음 6개월 범위의 파일까지
+    const TASKS_DIR = "/data/tasks/"; 
+    const FILE_DAY = 3; 
+    const MAX_LOAD_MONTHS_AHEAD = 6;   // 현재~다음 6개월 파일까지 로드
 
     // =========================
     //  유틸
@@ -234,7 +237,6 @@
     const addMonths = (d,n) => new Date(d.getFullYear(), d.getMonth()+n, 1);
     const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
-    // 분기 시작월(1,4,7,10) + FILE_DAY로 파일 키 만들기
     function quarterStartKeyByDate(date){
       const y = date.getFullYear();
       const m = date.getMonth()+1;
@@ -246,13 +248,14 @@
       return `${y}-${pad(qm)}-${pad(FILE_DAY)}`;
     }
 
-    // 기준일~몇개월치에 걸쳐 필요한 파일 키 목록(최소 2개 이상 로드해서 누락 방지)
     function collectQuarterKeys(baseDate, monthsAhead){
       const set = new Set();
       for(let i=0;i<=monthsAhead;i++){
         const d = addMonths(baseDate, i);
         set.add(quarterStartKeyByDate(d));
       }
+      // 과거 분기 파일(기한넘김 표시용)도 1개는 같이 읽기
+      set.add(quarterStartKeyByDate(addMonths(baseDate, -3)));
       return [...set];
     }
 
@@ -265,37 +268,28 @@
         .replaceAll("'","&#39;");
     }
 
-    // D-day 라벨
     function dueClass(diffDays){
-      if(diffDays < 0) return "due-ok"; // 지난 건은 일단 ok로
+      if(diffDays < 0) return "due-late";   //  기한 넘김은 별도 색
       if(diffDays <= 1) return "due-danger";
       if(diffDays <= 7) return "due-warn";
       return "due-ok";
     }
     function dueLabel(diffDays){
-      if(diffDays < 0) return `D+${Math.abs(diffDays)}`;
+      if(diffDays < 0) return `D+${Math.abs(diffDays)} (기한넘김)`;
       if(diffDays === 0) return "D-Day";
       return `D-${diffDays}`;
     }
 
-    // =========================
-    //  데이터 로드
-    // =========================
     async function fetchJson(url){
       const res = await fetch(url, { cache: "no-store" });
       if(!res.ok) throw new Error(`HTTP ${res.status}`);
       return await res.json();
     }
 
-    // tasks JSON 포맷(권장):
-    // {
-    //   "tasks": [
-    //     { "id":"...", "title":"...", "due":"YYYY-MM-DD", "category":"...", "desc":"줄1\n줄2", "owner":"", "status":"" }
-    //   ]
-    // }
     async function loadTasksForBase(baseDate){
       const keys = collectQuarterKeys(baseDate, MAX_LOAD_MONTHS_AHEAD);
       const urls = keys.map(k => `${TASKS_DIR}tasks-${k}.json`);
+
       const loaded = [];
       const okUrls = [];
 
@@ -306,30 +300,28 @@
           loaded.push(...arr);
           okUrls.push(u);
         }catch(e){
-          // 파일이 없으면 조용히 스킵(네가 깃에 아직 안 올렸을 수 있음)
+          // 없으면 스킵
         }
       }));
 
       return { tasks: loaded, urls: okUrls };
     }
 
-    // =========================
-    //  렌더
-    // =========================
     function render(tasks, baseDate, rangeDays){
       const root = document.getElementById("root");
       root.innerHTML = "";
 
       const base = startOfDay(baseDate);
-      const end = addDays(base, rangeDays);
+      const lower = (rangeDays === 0) ? base : startOfDay(addDays(base, -rangeDays));
+      const upper = (rangeDays === 0) ? base : startOfDay(addDays(base,  rangeDays));
 
-      // due 있는 것만 + 범위 필터
       const filtered = (tasks||[])
-        .map(t => {
-          const due = parseYmd(t.due);
-          return { ...t, _due: due };
+        .map(t => ({ ...t, _due: parseYmd(t.due) }))
+        .filter(t => t._due)
+        .filter(t => {
+          const dd = startOfDay(t._due);
+          return dd >= lower && dd <= upper;
         })
-        .filter(t => t._due && startOfDay(t._due) >= base && startOfDay(t._due) <= end)
         .sort((a,b)=> startOfDay(a._due) - startOfDay(b._due));
 
       if(filtered.length === 0){
@@ -342,17 +334,16 @@
         const diffDays = Math.round((due - base) / (1000*60*60*24));
 
         const title = escapeHtml(t.title || "(제목 없음)");
-        const cat = escapeHtml(t.category || "");
-        const owner = escapeHtml(t.owner || "");
-        const status = escapeHtml(t.status || "");
-        const desc = escapeHtml(t.desc || t.memo || "");
+        const memo = escapeHtml(t.memo || t.desc || "");
 
         const chips = [];
         chips.push(`<span class="chip ${dueClass(diffDays)}">${dueLabel(diffDays)}</span>`);
         chips.push(`<span class="chip">마감: ${ymd(due)}</span>`);
-        if(cat) chips.push(`<span class="chip">${cat}</span>`);
-        if(owner) chips.push(`<span class="chip">담당: ${owner}</span>`);
-        if(status) chips.push(`<span class="chip">상태: ${status}</span>`);
+
+        if(t.needBy)   chips.push(`<span class="chip">결재 필요: ${escapeHtml(t.needBy)}</span>`);
+        if(t.approver) chips.push(`<span class="chip">결재권자: ${escapeHtml(t.approver)}</span>`);
+        if(t.channel)  chips.push(`<span class="chip">경로: ${escapeHtml(t.channel)}</span>`);
+        if(t.risk)     chips.push(`<span class="chip">리스크: ${escapeHtml(t.risk)}</span>`);
 
         const el = document.createElement("div");
         el.className = "card";
@@ -361,15 +352,12 @@
             <div class="title">${title}</div>
             <div class="meta">${chips.join("")}</div>
           </div>
-          ${desc ? `<div class="desc white-pre">${desc}</div>` : ``}
+          ${memo ? `<div class="desc white-pre">${memo}</div>` : ``}
         `;
         root.appendChild(el);
       }
     }
 
-    // =========================
-    //  초기/이벤트
-    // =========================
     const baseLabel = document.getElementById("baseLabel");
     const filesLabel = document.getElementById("filesLabel");
     const baseDateInput = document.getElementById("baseDateInput");
@@ -393,14 +381,12 @@
       render(tasks, startOfDay(base), rangeDays);
     }
 
-    // 초기 기준일: 오늘
     setUiBaseDate(new Date());
 
     reloadBtn.addEventListener("click", refresh);
     baseDateInput.addEventListener("change", refresh);
     rangeSel.addEventListener("change", refresh);
 
-    // 첫 로드
     refresh();
   </script>
 </body>
