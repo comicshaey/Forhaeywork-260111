@@ -8,7 +8,7 @@
   <link rel="icon" href="/static/favicon.ico" />
   <link rel="stylesheet" href="/static/style.css" />
 
-  <!-- 이 페이지 전용 스타일(최소만) -->
+  <!-- 이 페이지 전용(최소) -->
   <style>
     :root{
       --line:#e5e5e5;
@@ -20,7 +20,7 @@
       --late:#7c3aed;
     }
 
-    /* 공통 style.css의 h1 center 정렬을 이 페이지에서만 좌측으로 */
+    /* 공통 style.css의 h1(center)을 이 페이지에서만 좌측 */
     body.page-deadline h1{
       text-align:left !important;
       margin: 18px 0 8px;
@@ -77,6 +77,34 @@
       font-size:.9rem;
       text-align:center;
     }
+
+    /* 지난 업무 details 표시용(최소) */
+    body.page-deadline .details-box{
+      margin-top:14px;
+    }
+    body.page-deadline .details-box summary{
+      cursor:pointer;
+      user-select:none;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-weight:700;
+      color:#222;
+      padding:8px 10px;
+      border-radius:12px;
+      background:#f9fafb;
+      border:1px solid #e5e5e5;
+      list-style:none;
+    }
+    body.page-deadline .details-box summary::-webkit-details-marker{display:none;}
+    body.page-deadline .details-box[open] summary{
+      background:#fff;
+    }
+    body.page-deadline .details-hint{
+      font-weight:600;
+      font-size:0.95rem;
+      color:#666;
+    }
   </style>
 </head>
 
@@ -121,7 +149,21 @@
     <section class="section">
       <h2 style="font-size:1.2rem; margin:0 0 12px">마감 임박 업무 목록</h2>
       <hr />
-      <div id="root" class="grid"></div>
+
+      <!-- ✅ 기준일자 당일~이후 -->
+      <div class="muted" style="margin:0 0 8px;">당일~이후 마감 업무</div>
+      <div id="rootUpcoming" class="grid"></div>
+
+      <!-- ✅ 지난 업무: 기본 접힘 -->
+      <details id="pastDetails" class="details-box">
+        <summary>
+          <span id="pastSummaryText">지난 업무 (0건) — 펼치기</span>
+          <span class="details-hint">기본 접힘</span>
+        </summary>
+        <div style="margin-top:12px;">
+          <div id="rootPast" class="grid"></div>
+        </div>
+      </details>
     </section>
 
     <footer>
@@ -223,13 +265,46 @@
       return { tasks: loaded, urls: okUrls };
     }
 
+    function makeTaskCard(t, base){
+      const due = startOfDay(t._due);
+      const diffDays = Math.round((due - base) / (1000*60*60*24));
+
+      const title = escapeHtml(t.title || "(제목 없음)");
+      const memo = escapeHtml(t.memo || t.desc || "");
+
+      const chips = [];
+      chips.push(`<span class="chip ${dueClass(diffDays)}">${dueLabel(diffDays)}</span>`);
+      chips.push(`<span class="chip">마감: ${ymd(due)}</span>`);
+
+      if(t.needBy)   chips.push(`<span class="chip">결재 필요: ${escapeHtml(t.needBy)}</span>`);
+      if(t.approver) chips.push(`<span class="chip">결재권자: ${escapeHtml(t.approver)}</span>`);
+      if(t.channel)  chips.push(`<span class="chip">경로: ${escapeHtml(t.channel)}</span>`);
+      if(t.risk)     chips.push(`<span class="chip">리스크: ${escapeHtml(t.risk)}</span>`);
+
+      const el = document.createElement("div");
+      el.className = "card";
+      el.innerHTML = `
+        <div class="card-head">
+          <div class="title">${title}</div>
+          <div class="meta">${chips.join("")}</div>
+        </div>
+        ${memo ? `<div class="desc white-pre">${memo}</div>` : ``}
+      `;
+      return el;
+    }
+
     function render(tasks, baseDate, rangeDays){
-      const root = document.getElementById("root");
-      root.innerHTML = "";
+      const rootUpcoming = document.getElementById("rootUpcoming");
+      const rootPast = document.getElementById("rootPast");
+      const pastDetails = document.getElementById("pastDetails");
+      const pastSummaryText = document.getElementById("pastSummaryText");
+
+      rootUpcoming.innerHTML = "";
+      rootPast.innerHTML = "";
 
       const base = startOfDay(baseDate);
 
-      // "전체보기"면 사실상 전기간(정렬만 기준일 기반)
+      // 전체보기면 전기간(정렬만 기준일자 기반)
       const lower = (rangeDays === 0) ? new Date(1970,0,1) : startOfDay(addDays(base, -rangeDays));
       const upper = (rangeDays === 0) ? new Date(2100,0,1) : startOfDay(addDays(base,  rangeDays));
 
@@ -241,57 +316,64 @@
           return dd >= lower && dd <= upper;
         })
         .sort((a,b)=>{
-          // ✅ 핵심: 기준일자 이전(지난 업무)은 맨 아래로
+          // ✅ 기준일자 이전(지난 업무)=아래로
           const adue = startOfDay(a._due);
           const bdue = startOfDay(b._due);
 
           const aDiff = Math.round((adue - base) / (1000*60*60*24));
           const bDiff = Math.round((bdue - base) / (1000*60*60*24));
 
-          const aPast = aDiff < 0 ? 1 : 0;   // 0=오늘/미래, 1=과거
+          const aPast = aDiff < 0 ? 1 : 0; // 0=당일/미래, 1=과거
           const bPast = bDiff < 0 ? 1 : 0;
 
-          if(aPast !== bPast) return aPast - bPast; // 과거(1)는 뒤로
-
-          // 같은 그룹 안에서는 마감일 빠른 순
+          if(aPast !== bPast) return aPast - bPast;
           if(adue - bdue !== 0) return adue - bdue;
-
-          // 동일 날짜면 제목으로 안정 정렬(옵션)
           return (a.title || "").localeCompare((b.title || ""), "ko");
         });
 
       if(filtered.length === 0){
-        root.innerHTML = `<div class="empty">없음. 자유를 누려라.</div>`;
+        rootUpcoming.innerHTML = `<div class="empty">없음. 자유를 누려라.</div>`;
+        pastSummaryText.textContent = `지난 업무 (0건) — 펼치기`;
+        pastDetails.open = false;
         return;
       }
+
+      const upcoming = [];
+      const past = [];
 
       for(const t of filtered){
         const due = startOfDay(t._due);
         const diffDays = Math.round((due - base) / (1000*60*60*24));
-
-        const title = escapeHtml(t.title || "(제목 없음)");
-        const memo = escapeHtml(t.memo || t.desc || "");
-
-        const chips = [];
-        chips.push(`<span class="chip ${dueClass(diffDays)}">${dueLabel(diffDays)}</span>`);
-        chips.push(`<span class="chip">마감: ${ymd(due)}</span>`);
-
-        if(t.needBy)   chips.push(`<span class="chip">결재 필요: ${escapeHtml(t.needBy)}</span>`);
-        if(t.approver) chips.push(`<span class="chip">결재권자: ${escapeHtml(t.approver)}</span>`);
-        if(t.channel)  chips.push(`<span class="chip">경로: ${escapeHtml(t.channel)}</span>`);
-        if(t.risk)     chips.push(`<span class="chip">리스크: ${escapeHtml(t.risk)}</span>`);
-
-        const el = document.createElement("div");
-        el.className = "card";
-        el.innerHTML = `
-          <div class="card-head">
-            <div class="title">${title}</div>
-            <div class="meta">${chips.join("")}</div>
-          </div>
-          ${memo ? `<div class="desc white-pre">${memo}</div>` : ``}
-        `;
-        root.appendChild(el);
+        if(diffDays < 0) past.push(t);
+        else upcoming.push(t);
       }
+
+      // ✅ 당일/미래
+      if(upcoming.length === 0){
+        rootUpcoming.innerHTML = `<div class="empty">당일~이후 마감 업무 없음.</div>`;
+      }else{
+        for(const t of upcoming){
+          rootUpcoming.appendChild(makeTaskCard(t, base));
+        }
+      }
+
+      // ✅ 지난 업무(자동 접힘)
+      pastSummaryText.textContent = `지난 업무 (${past.length}건) — 펼치기`;
+      pastDetails.open = false;
+
+      if(past.length === 0){
+        rootPast.innerHTML = `<div class="empty">지난 업무 없음.</div>`;
+      }else{
+        for(const t of past){
+          rootPast.appendChild(makeTaskCard(t, base));
+        }
+      }
+
+      // details 상태에 따라 summary 문구 다듬기(선택)
+      pastDetails.addEventListener("toggle", ()=>{
+        const tail = pastDetails.open ? "접기" : "펼치기";
+        pastSummaryText.textContent = `지난 업무 (${past.length}건) — ${tail}`;
+      }, { once:false });
     }
 
     const baseLabel = document.getElementById("baseLabel");
