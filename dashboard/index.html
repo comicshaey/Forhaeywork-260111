@@ -8,6 +8,7 @@
   <link rel="icon" href="/static/favicon.ico" />
   <link rel="stylesheet" href="/static/style.css" />
 
+  <!-- 이 페이지 전용 스타일(최소만) -->
   <style>
     :root{
       --line:#e5e5e5;
@@ -19,35 +20,30 @@
       --late:#7c3aed;
     }
 
-    .wrap{max-width:880px; margin:0 auto; padding:24px 16px;}
-    h1{font-size:1.75rem; margin:18px 0 8px; text-align:left !important;}
-    .subtitle{margin:0 0 12px; color:#444; font-size:0.98rem}
-    .muted{color:var(--muted); font-size:0.95rem}
-    hr{border:none; border-top:1px solid #ddd; margin:20px 0;}
-
-    .section{
-      border:1px solid var(--line);
-      border-radius:12px;
-      padding:16px 18px;
-      margin:18px 0;
-      background:#fff;
+    /* 공통 style.css의 h1 center 정렬을 이 페이지에서만 좌측으로 */
+    body.page-deadline h1{
+      text-align:left !important;
+      margin: 18px 0 8px;
+      font-size: 1.75rem;
     }
 
-    .topbar{
+    body.page-deadline .subtitle{margin:0 0 12px; color:#444; font-size:0.98rem}
+
+    body.page-deadline .topbar{
       display:flex;
       gap:10px;
       flex-wrap:wrap;
       align-items:center;
       justify-content:space-between;
     }
-    .topbar .left{
+    body.page-deadline .topbar .left{
       display:flex;
       gap:8px;
       flex-wrap:wrap;
       align-items:center;
     }
 
-    .pill{
+    body.page-deadline .pill{
       display:inline-flex;
       gap:6px;
       align-items:center;
@@ -58,129 +54,24 @@
       font-size:0.9rem;
       color:#333;
     }
-    .pill b{color:#111}
+    body.page-deadline .pill b{color:#111}
 
-    .btn{
-      display:inline-block;
-      padding:10px 16px;
-      border-radius:12px;
-      border:1px solid #222;
-      text-decoration:none;
-      color:#111;
-      font-weight:600;
-      background:#fff;
-    }
-    .btn:hover{background:#f3f4f6;}
-    .btn.primary{background:#111; color:#fff;}
-    .btn.primary:hover{background݈:#000;}
-    .btn + .btn{margin-left:8px;}
-
-    .controls{
+    body.page-deadline .controls{
       display:flex;
       flex-wrap:wrap;
       gap:8px;
       align-items:center;
       margin-top:10px;
     }
-    .controls input[type="date"]{min-width:160px;}
-    .controls select{min-width:160px;}
+    body.page-deadline .controls input[type="date"]{min-width:160px;}
+    body.page-deadline .controls select{min-width:160px;}
 
-    .grid{
-      display:grid;
-      gap:12px;
-      margin-top:12px;
-    }
+    body.page-deadline .chip.due-danger{border-color:rgba(200,53,45,.35); color:var(--danger); font-weight:800;}
+    body.page-deadline .chip.due-warn{border-color:rgba(180,83,9,.35); color:var(--warn); font-weight:800;}
+    body.page-deadline .chip.due-ok{border-color:rgba(15,118,110,.35); color:var(--ok); font-weight:800;}
+    body.page-deadline .chip.due-late{border-color:rgba(124,58,237,.35); color:var(--late); font-weight:800;}
 
-    .card{
-      border:1px solid var(--line);
-      border-radius:12px;
-      padding:14px 14px 12px;
-      background:#fafafa;
-    }
-
-    /* =============================
-       Dashboard hotfix (공통CSS 충돌 방지)
-       ============================= */
-
-    /* 카드 헤더: 무조건 세로 (타이틀 위 / 칩 아래) */
-    .card-head{
-      display:flex;
-      flex-direction:column;
-      align-items:flex-start;
-      justify-content:flex-start;
-      gap:10px;
-      margin-bottom:8px;
-    }
-
-    /* 타이틀은 한 줄 영역을 확실히 확보 */
-    .title{
-      width:100%;
-      font-weight:800;
-      color:#111;
-      font-size:1.05rem;
-      line-height:1.35;
-    }
-
-    /* 칩 묶음: 왼쪽정렬 + 자연 줄바꿈 + 전체폭 */
-    .meta{
-      width:100%;
-      display:flex;
-      flex-wrap:wrap;
-      justify-content:flex-start !important;
-      align-items:flex-start;
-      gap:6px;
-    }
-
-    /* 칩: 공통CSS(body span) 영향 차단 */
-    .chip{
-      display:inline-flex;
-      align-items:center;
-      padding:4px 8px;
-      border-radius:999px;
-      background:#fff;
-      border:1px solid #e6e6e6;
-      font-size:0.85rem !important;
-      line-height:1.2 !important;
-      color:#333;
-      white-space:normal;
-      max-width:100%;
-      overflow-wrap:anywhere;
-      word-break:break-word;
-    }
-
-    /* 모바일에서 칩이 타이틀 옆에 억지로 붙는 느낌 방지 */
-    @media (max-width: 640px){
-      .chip{ flex: 0 1 auto; }
-    }
-
-    .chip.due-danger{border-color:rgba(200,53,45,.35); color:var(--danger); font-weight:800;}
-    .chip.due-warn{border-color:rgba(180,83,9,.35); color:var(--warn); font-weight:800;}
-    .chip.due-ok{border-color:rgba(15,118,110,.35); color:var(--ok); font-weight:800;}
-    .chip.due-late{border-color:rgba(124,58,237,.35); color:var(--late); font-weight:800;}
-
-    /* 메모 줄바꿈 유지 */
-    .white-pre{
-      white-space: pre-wrap;
-      overflow-wrap:anywhere;
-      line-height:1.5;
-    }
-
-    .desc{
-      margin-top:6px;
-      color:#333;
-      font-size:0.95rem;
-    }
-
-    .empty{
-      padding:14px;
-      border:1px dashed #d7d7d7;
-      border-radius:12px;
-      background:#fff;
-      color:#666;
-      font-size:0.95rem;
-    }
-
-    footer{
+    body.page-deadline footer{
       margin:18px 0 8px;
       color:#555;
       font-size:.9rem;
@@ -189,7 +80,7 @@
   </style>
 </head>
 
-<body>
+<body class="page-deadline">
   <main class="wrap">
     <h1>마감임박 업무 알림</h1>
     <p class="subtitle">·마감 넘긴 것도 같이 조회</p>
@@ -338,9 +229,7 @@
 
       const base = startOfDay(baseDate);
 
-      // rangeDays=0이면 "전체보기"라면서 사실상 기준일만 보여주는 게 애매해서:
-      // 전체보기 = 모든 due를 보여주되, 정렬만 기준일 기반으로 한다는 식으로 가려면 아래 로직 바꿔야 함.
-      // 네가 의도한 게 "전후 N일"이면 지금 로직 유지.
+      // "전체보기"면 사실상 전기간(정렬만 기준일 기반)
       const lower = (rangeDays === 0) ? new Date(1970,0,1) : startOfDay(addDays(base, -rangeDays));
       const upper = (rangeDays === 0) ? new Date(2100,0,1) : startOfDay(addDays(base,  rangeDays));
 
@@ -351,7 +240,25 @@
           const dd = startOfDay(t._due);
           return dd >= lower && dd <= upper;
         })
-        .sort((a,b)=> startOfDay(a._due) - startOfDay(b._due));
+        .sort((a,b)=>{
+          // ✅ 핵심: 기준일자 이전(지난 업무)은 맨 아래로
+          const adue = startOfDay(a._due);
+          const bdue = startOfDay(b._due);
+
+          const aDiff = Math.round((adue - base) / (1000*60*60*24));
+          const bDiff = Math.round((bdue - base) / (1000*60*60*24));
+
+          const aPast = aDiff < 0 ? 1 : 0;   // 0=오늘/미래, 1=과거
+          const bPast = bDiff < 0 ? 1 : 0;
+
+          if(aPast !== bPast) return aPast - bPast; // 과거(1)는 뒤로
+
+          // 같은 그룹 안에서는 마감일 빠른 순
+          if(adue - bdue !== 0) return adue - bdue;
+
+          // 동일 날짜면 제목으로 안정 정렬(옵션)
+          return (a.title || "").localeCompare((b.title || ""), "ko");
+        });
 
       if(filtered.length === 0){
         root.innerHTML = `<div class="empty">없음. 자유를 누려라.</div>`;
