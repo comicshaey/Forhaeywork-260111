@@ -124,7 +124,15 @@ body .muted {
   margin: 0 auto;
 }
 
+/* main 태그 기본 */
 main {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+/* ✅ wrap 클래스(페이지에서 class="wrap" 쓰는 케이스 대응) */
+.wrap{
   max-width: 880px;
   margin: 0 auto;
   padding: 24px 16px;
@@ -162,6 +170,16 @@ main {
   padding: 14px 16px;
   margin: 14px 0;
   background: #fafafa;
+}
+
+/* ✅ 빈 상태 공통 */
+.empty{
+  padding:14px;
+  border:1px dashed #d7d7d7;
+  border-radius:12px;
+  background:#fff;
+  color:#666;
+  font-size:0.95rem;
 }
 
 /* =============================
@@ -362,7 +380,6 @@ body h2 + hr {
 }
 
 /* =============================
-   ↓↓↓ 요청사항 적용 부분 ↓↓↓
    simple-table 정렬
    ============================= */
 
@@ -399,59 +416,69 @@ body h2 + hr {
   box-sizing: border-box;
 }
 
-
 .task-memo {
   white-space: pre-wrap;
 }
 
+/* =====================================================
+   ✅ deadline/dashboard layout lock (스코프 적용)
+   - 전역 body div/span 규칙 때문에 카드/칩 레이아웃 깨지는 문제 방지
+   ===================================================== */
 
-/* ===== dashboard layout lock (최종) ===== */
-
-/* 공통CSS(body div/span) 영향 차단: 카드 영역만 폰트/라인 높이 정상화 */
-.card, .card *{
+body.page-deadline .card,
+body.page-deadline .card *{
   line-height: 1.35;
 }
 
 /* 카드 헤더는 무조건 세로 */
-.card-head{
-  display:flex !important;
-  flex-direction:column !important;
-  align-items:flex-start !important;
-  justify-content:flex-start !important;
-  gap:10px !important;
+body.page-deadline .card-head{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:flex-start;
+  gap:10px;
+  margin-bottom:8px;
 }
 
 /* 타이틀은 한 줄 영역 확보 */
-.title{
-  width:100% !important;
+body.page-deadline .title{
+  width:100%;
+  font-weight:800;
+  color:#111;
+  font-size:1.05rem;
+  line-height:1.35;
 }
 
 /* 칩 묶음은 왼쪽정렬 + 줄바꿈 */
-.meta{
-  width:100% !important;
-  display:flex !important;
-  flex-wrap:wrap !important;
-  justify-content:flex-start !important;
-  align-items:flex-start !important;
-  gap:6px !important;
+body.page-deadline .meta{
+  width:100%;
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:flex-start;
+  align-items:flex-start;
+  gap:6px;
 }
 
-/* 칩: 전역 span 폰트/라인하이트를 눌러버림 */
-.meta .chip{
-  display:inline-flex !important;
-  align-items:center !important;
-  font-size:0.85rem !important;
-  line-height:1.2 !important;
-  white-space:normal !important;
-  max-width:100% !important;
-  overflow-wrap:anywhere !important;
-  word-break:break-word !important;
+/* 칩: 전역 span 영향 차단 */
+body.page-deadline .chip{
+  display:inline-flex;
+  align-items:center;
+  padding:4px 8px;
+  border-radius:999px;
+  background:#fff;
+  border:1px solid #e6e6e6;
+  font-size:0.85rem;
+  line-height:1.2;
+  color:#333;
+  white-space:normal;
+  max-width:100%;
+  overflow-wrap:anywhere;
+  word-break:break-word;
 }
 
 /* 메모는 줄바꿈 유지 */
-.desc.white-pre{
-  white-space:pre-wrap !important;
-  overflow-wrap:anywhere !important;
-  line-height:1.5 !important;
+body.page-deadline .desc.white-pre{
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  line-height:1.5;
 }
-
