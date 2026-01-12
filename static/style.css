@@ -403,3 +403,55 @@ body h2 + hr {
 .task-memo {
   white-space: pre-wrap;
 }
+
+
+/* ===== dashboard layout lock (최종) ===== */
+
+/* 공통CSS(body div/span) 영향 차단: 카드 영역만 폰트/라인 높이 정상화 */
+.card, .card *{
+  line-height: 1.35;
+}
+
+/* 카드 헤더는 무조건 세로 */
+.card-head{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:flex-start !important;
+  justify-content:flex-start !important;
+  gap:10px !important;
+}
+
+/* 타이틀은 한 줄 영역 확보 */
+.title{
+  width:100% !important;
+}
+
+/* 칩 묶음은 왼쪽정렬 + 줄바꿈 */
+.meta{
+  width:100% !important;
+  display:flex !important;
+  flex-wrap:wrap !important;
+  justify-content:flex-start !important;
+  align-items:flex-start !important;
+  gap:6px !important;
+}
+
+/* 칩: 전역 span 폰트/라인하이트를 눌러버림 */
+.meta .chip{
+  display:inline-flex !important;
+  align-items:center !important;
+  font-size:0.85rem !important;
+  line-height:1.2 !important;
+  white-space:normal !important;
+  max-width:100% !important;
+  overflow-wrap:anywhere !important;
+  word-break:break-word !important;
+}
+
+/* 메모는 줄바꿈 유지 */
+.desc.white-pre{
+  white-space:pre-wrap !important;
+  overflow-wrap:anywhere !important;
+  line-height:1.5 !important;
+}
+
