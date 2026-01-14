@@ -1,0 +1,4 @@
+pip install pyinstaller pandas openpyxl
+
+pyinstaller --onefile --noconsole --name "고해영 천재" geniushaey_tk.py
+
