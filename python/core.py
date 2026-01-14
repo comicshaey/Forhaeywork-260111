@@ -1,11 +1,11 @@
 # core.py
-# 교육공무직 연차유급휴가 계산 핵심 로직 (결과 설명 포함 버전)
+# 교육공무직 연차유급휴가 계산 핵심 로직 (소수점 1자리 반올림 확정)
 
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
+from typing import Optional, Dict
 import pandas as pd
 from openpyxl import load_workbook
-from typing import Optional, Dict
 
 
 # =========================
@@ -162,9 +162,8 @@ def years_of_service(first_hire: date, ref: date) -> int:
 
 def normal_entitlement(first_hire: date, grant_year: int) -> float:
     """
-    임시(근기법 기본형):
-    - 1년 이상: 15 + 2년마다 1일 가산(상한 25)
-    - 1년 미만: 0 (월차/개근월 로직은 추후 추가)
+    임시 기준(근로기준법 기본형):
+    - 1년 이상: 15 + 2년마다 1일 가산 (상한 25)
     """
     y = years_of_service(first_hire, date(grant_year, 1, 1))
     if y < 1:
@@ -178,39 +177,44 @@ def calculate_annual_leave(emp: Employee, worklog: pd.DataFrame, grant_year: int
     non_att = calc_non_attend_days(worklog, period)
 
     attend_days = max(0.0, denom - non_att)
-    attend_rate = max(0.0, attend_days / denom) if denom > 0 else 0.0
+    attend_rate = (attend_days / denom) if denom > 0 else 0.0
 
     normal = normal_entitlement(emp.first_hire_date, grant_year)
 
     is_over_80 = attend_rate >= 0.8
-    granted = normal if is_over_80 else round(normal * attend_rate, 2)
+
+    # 🔴 소수점 1자리 반올림 규칙 고정
+    raw = normal if is_over_80 else (normal * attend_rate)
+    granted = round(raw, 1)
 
     over80_ox = "O" if is_over_80 else "X"
 
     under80_reason = ""
     if not is_over_80:
         under80_reason = (
-            f"출근율 {round(attend_rate*100, 2)}%로 80% 미만입니다. "
-            f"정상부여일수({normal}일)에 출근율을 곱해 비례부여했습니다."
+            f"출근율 {round(attend_rate*100, 1)}%로 80% 미만입니다. "
+            f"정상부여일수에 출근율을 곱해 산출한 뒤, "
+            f"소수점 첫째 자리까지 반올림하여 부여하였습니다."
         )
 
     process_desc = (
-        "계산요약: "
-        f"분모(소정근로일수) {denom} - 차감(불출근) {non_att} = 실제출근 {attend_days}일, "
-        f"출근율 {round(attend_rate*100,2)}%. "
-        f"정상부여 {normal}일 기준으로, "
-        + ("80% 이상이라 정상부여 적용." if is_over_80 else "80% 미만이라 비례부여(정상부여×출근율) 적용.")
+        f"분모 {denom}일 중 불출근 {non_att}일을 제외한 "
+        f"실제출근 {attend_days}일 → 출근율 {round(attend_rate*100,1)}%. "
+        f"정상부여 {normal}일 기준으로 "
+        + ("80% 이상이라 정상부여 적용."
+           if is_over_80
+           else "80% 미만으로 비례부여(정상부여×출근율) 후 반올림 적용.")
     )
 
     return {
         "기준기간": f"{period.start} ~ {period.end}",
         "소정근로일수": denom,
-        "차감일수": non_att,
+        "불출근일수": non_att,
         "실제출근일수": attend_days,
-        "출근율(%)": round(attend_rate * 100, 2),
+        "출근율(%)": round(attend_rate * 100, 1),
         "80%이상여부(O/X)": over80_ox,
-        "정상부여일수(임시)": normal,
-        "부여연차": granted,
-        "80%미만_설명": under80_reason,
+        "정상부여일수": normal,
+        "최종부여연차": granted,
+        "80%미만_사유": under80_reason,
         "계산과정_요약": process_desc,
     }
