@@ -25,6 +25,9 @@ def run_calculation():
 
         output.delete("1.0", tk.END)
         for k, v in result.items():
+            # 80%미만_설명은 80% 이상일 때 빈 문자열이라 출력 스킵해도 됨
+            if k == "80%미만_설명" and not str(v).strip():
+                continue
             output.insert(tk.END, f"{k}: {v}\n")
 
     except Exception as e:
@@ -60,7 +63,7 @@ tk.Button(root, text="근무상황목록 선택 & 계산", command=run_calculati
     row=5, column=0, columnspan=2, pady=10
 )
 
-output = tk.Text(root, height=8, width=45)
+output = tk.Text(root, height=14, width=60)
 output.grid(row=6, column=0, columnspan=2, padx=5, pady=5)
 
 root.mainloop()
