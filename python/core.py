@@ -1,9 +1,8 @@
 # core.py
-# 교육공무직 연차유급휴가 계산 핵심 로직 (최종 코어)
+# 교육공무직 연차유급휴가 계산 핵심 로직 (결과 설명 포함 버전)
 
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-import math
 import pandas as pd
 from openpyxl import load_workbook
 from typing import Optional, Dict
@@ -123,7 +122,7 @@ def read_worklog(xlsx_path: str) -> pd.DataFrame:
 
 
 # =========================
-# 출근 / 차감 규칙
+# 출근 / 차감 규칙 (임시)
 # =========================
 
 NON_ATTEND = ["결근", "무급", "무단", "휴직"]
@@ -150,27 +149,6 @@ def calc_non_attend_days(df: pd.DataFrame, period: Period) -> float:
     return total
 
 
-def breakdown_non_attend_by_status(df: pd.DataFrame, period: Period) -> pd.DataFrame:
-    rows = []
-    for _, r in df.iterrows():
-        if not is_non_attend(str(r["status"])):
-            continue
-        d = r["work_date"]
-        if d and period.start <= d <= period.end:
-            rows.append({
-                "근무상황": r["status"],
-                "일수": r["days"] if r["days"] else 1.0
-            })
-    if not rows:
-        return pd.DataFrame(columns=["근무상황", "일수"])
-    return (
-        pd.DataFrame(rows)
-        .groupby("근무상황", as_index=False)["일수"]
-        .sum()
-        .sort_values("일수", ascending=False)
-    )
-
-
 # =========================
 # 연차 계산
 # =========================
@@ -183,10 +161,15 @@ def years_of_service(first_hire: date, ref: date) -> int:
 
 
 def normal_entitlement(first_hire: date, grant_year: int) -> float:
+    """
+    임시(근기법 기본형):
+    - 1년 이상: 15 + 2년마다 1일 가산(상한 25)
+    - 1년 미만: 0 (월차/개근월 로직은 추후 추가)
+    """
     y = years_of_service(first_hire, date(grant_year, 1, 1))
     if y < 1:
         return 0.0
-    return min(25, 15 + (y - 1) // 2)
+    return float(min(25, 15 + (y - 1) // 2))
 
 
 def calculate_annual_leave(emp: Employee, worklog: pd.DataFrame, grant_year: int) -> dict:
@@ -194,14 +177,40 @@ def calculate_annual_leave(emp: Employee, worklog: pd.DataFrame, grant_year: int
     denom = scheduled_work_days(emp.schedule_key)
     non_att = calc_non_attend_days(worklog, period)
 
-    attend_rate = max(0.0, (denom - non_att) / denom)
+    attend_days = max(0.0, denom - non_att)
+    attend_rate = max(0.0, attend_days / denom) if denom > 0 else 0.0
+
     normal = normal_entitlement(emp.first_hire_date, grant_year)
-    granted = normal if attend_rate >= 0.8 else round(normal * attend_rate, 2)
+
+    is_over_80 = attend_rate >= 0.8
+    granted = normal if is_over_80 else round(normal * attend_rate, 2)
+
+    over80_ox = "O" if is_over_80 else "X"
+
+    under80_reason = ""
+    if not is_over_80:
+        under80_reason = (
+            f"출근율 {round(attend_rate*100, 2)}%로 80% 미만입니다. "
+            f"정상부여일수({normal}일)에 출근율을 곱해 비례부여했습니다."
+        )
+
+    process_desc = (
+        "계산요약: "
+        f"분모(소정근로일수) {denom} - 차감(불출근) {non_att} = 실제출근 {attend_days}일, "
+        f"출근율 {round(attend_rate*100,2)}%. "
+        f"정상부여 {normal}일 기준으로, "
+        + ("80% 이상이라 정상부여 적용." if is_over_80 else "80% 미만이라 비례부여(정상부여×출근율) 적용.")
+    )
 
     return {
         "기준기간": f"{period.start} ~ {period.end}",
         "소정근로일수": denom,
         "차감일수": non_att,
+        "실제출근일수": attend_days,
         "출근율(%)": round(attend_rate * 100, 2),
+        "80%이상여부(O/X)": over80_ox,
+        "정상부여일수(임시)": normal,
         "부여연차": granted,
+        "80%미만_설명": under80_reason,
+        "계산과정_요약": process_desc,
     }
